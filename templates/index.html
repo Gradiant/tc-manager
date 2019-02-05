@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<title>tc-manager</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+   <script src="/static/tcmanager.js"></script>
+   <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+<nav>
+    <div><img src="/static/arq_logo.png" alt="logo"></div>
+  <h1>TC Manager</h1>
+  <div class="dropdown">
+    <button class="dropbtn"> Interfaces
+      <i class="fa fa-caret-down"></i>
+    </button>
+    <div id="interfacelist" class="dropdown-content">
+    </div>
+  </div>
+</nav>
+
+
+<div id="interface_info" hidden>
+          <h2> </h2>
+          <div class="rate"> default_rate: <span></span>
+              <i class="fa fa-edit" id="rate_edit"></i>
+              <i class="fa fa-remove" id="rate_remove"></i>
+          </div>
+           <div class="policies">
+         <table><thead>
+          <tr><th>Policy_id<i class="fa fa-plus" id="policy_add"></i></th>
+              <th>IP src</th><th>port src</th>
+              <th>IP dst</th><th>port dst</th>
+              <th>Rate</th></tr>
+             </thead>
+             <tbody></tbody>
+         </table>
+           </div>
+</div>
+
+
+<div id="confirm"  hidden>
+    <div class="message"></div>
+  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
+      Apply to current or all interfaces?</p>
+</div>
+
+<div id="confirm-policy"  hidden>
+    <div class="message">
+        Match:<br/>
+        src_ip:   <input type="text" id="src_ip" placeholder="Optional"><br/>
+        dst_ip:   <input type="text" id="dst_ip"><br/>
+        src_port: <input type="text" id="src_port"><br/>
+        dst_port: <input type="text" id="dst_port"> <br/>
+        rate: <input type="text" id="rate_input" value="1">
+                <select id="rate_units">
+                    <option value="Mbit" selected="selected">Mbps</option>
+                    <option value="Kbit">kbps</option></select>
+    </div>
+  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
+      Apply to current or all interfaces?</p>
+</div>
+
+
+</body>
