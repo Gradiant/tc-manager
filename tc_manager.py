@@ -106,7 +106,7 @@ class Interface:
         if default_rate is not None:
             cmd = "tc filter add dev {} ingress protocol ip pref 65535 " \
                   "u32 match u32 0 0 " \
-                  "police rate {} burst 50K action drop".format(self.name, default_rate)
+                  "police rate {} burst 1m action drop".format(self.name, default_rate)
             logger.debug('updating {} default rate to {}: cmd -> {}'.format(self.name, default_rate, cmd))
             # TODO check command exit status
             run(cmd.split(),  text=True)
@@ -156,7 +156,7 @@ class Interface:
                 if 'dst_port' in match and match['dst_port'] is not None:
                     match_cmd = match_cmd + "match ip dport {} 0xffff ".format(match['dst_port'])
             cmd = cmd + match_cmd
-            cmd = cmd + " police rate {} burst 50K action drop".format(action['rate'])
+            cmd = cmd + " police rate {} burst 1m action drop".format(action['rate'])
             run(cmd.split(), stdout=PIPE, stderr=PIPE,  text=True)
             logger.debug('creating new policy in {}: cmd -> {}'.format(self.name, cmd))
 
@@ -166,7 +166,7 @@ class Interface:
     def update_policy(self, policy_id, action):
         if self.get_policy(policy_id):
             cmd = "tc filter replace dev {} ingress pref 5 handle {} " \
-                  "protocol ip u32 police rate {} burst 50K action drop".format(self.name, policy_id, action['rate'])
+                  "protocol ip u32 police rate {} burst 1m action drop".format(self.name, policy_id, action['rate'])
             logger.debug("Sending TC cmd: {}".format(cmd))
             run(cmd.split(),  text=True)
         else:
