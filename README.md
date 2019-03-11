@@ -27,7 +27,15 @@ Dependencies can be install with
   
 ## Getting Started
 
+Before running tc-manager you MUST create an Intermediate Functional Block (ifb0). 
+
+ ``` 
+ modprobe ifb
+ ip link ifb0 set up
+ ```
+ 
 To run tc-manager docker container to set policies in your host interfaces you have to:
+
  - use --net=host to allow container access your HOST network interface.
  - use --cap-add NET_ADMIN to grant container the privilege to admin host networking.
  - mount your host /proc into the container /proc.
@@ -107,6 +115,14 @@ Received rate should mirror the policy rate.
 ![policy_rate_img](images/iperf3_add_policy_1.png)
 
 ## Versions
+
+- **0.2.0**
+Released 11 of March 2019
+ 
+  **Changelog**
+ 
+  - Bitrate control is now implemented as a tc htb class in an Intermediate Functional Block device (ifb0) instead of 
+  an ingress filter (TCP does not behave correctly when using ingress filter)
  
 - **0.1.0**
 Released 05 of February 2019
