@@ -14,7 +14,7 @@ def ip_to_str(tc_ip):
 
 
 def extract_policy(tc_filter):
-    matched = re.search('pref (?P<pref>\d+) u32 chain 0 fh (?P<handle>\w+::\w+)(?: .+)* flowid 1:(?P<policy_id>\d+)', tc_filter)
+    matched = re.search('pref (?P<pref>\d+) u32(?: .+)* fh (?P<handle>\w+::\w+)(?: .+)* flowid 1:(?P<policy_id>\d+)', tc_filter)
     if matched is not None:
         policy = {
             'policy_id': int(matched.group('policy_id')),
