@@ -52,6 +52,7 @@ def post_policy(interface_name):
 
 @app.route('/api/interfaces/<interface_name>/policies/<policy_id>', methods=['DELETE'])
 def delete_policy(interface_name, policy_id):
+    policy_id = int(policy_id)
     if interface_name in interfaces_dict:
         interface = interfaces_dict[interface_name]
         interface.delete_policy(policy_id)
@@ -93,6 +94,7 @@ if __name__ == '__main__':
     print(interface_names)
     interfaces = NetworkInterfaces(whitelist=interface_names[1:])
     interfaces_dict = interfaces.interfaces
+
     app.run(host='0.0.0.0', port=5000, debug=True)
 
 
