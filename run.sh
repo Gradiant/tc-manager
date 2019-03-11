@@ -1,8 +1,9 @@
 #!/bin/bash
 
-modprobe ifb
-ip link ifb0 set down
-ip link ifb0 set up
+modprobe -r ifb
+modprobe ifb numifbs=2
+ip link set ifb0 up
+ip link set ifb1 up
 
 docker build -t tc-manager:0.2.0 .
 
@@ -21,3 +22,4 @@ read -p "Follow instructions of README.md. Press any key to stop and clean."
 
 echo "cleaning"
 docker rm -f h1 h2; docker network rm tcnet
+modprobe -r ifb

@@ -63,9 +63,9 @@ class NetworkInterfaces:
                 if blacklist_if in if_names:
                     if_names.remove(blacklist_if)
         self.interfaces = dict()
-        for if_name in if_names:
+        for idx, if_name in enumerate(if_names):
             logger.debug("adding interface {} for managing".format(if_name))
-            self.interfaces[if_name] = Interface(if_name)
+            self.interfaces[if_name] = Interface(if_name, "ifb{}".format(idx))
 
     def set_default_rate(self, default_rate):
         for interface_name in self.interfaces:
@@ -81,13 +81,14 @@ class NetworkInterfaces:
 
 
 class Interface:
-    def __init__(self, name, default_rate='1mbit'):
+    def __init__(self, name, ifb_name, default_rate='1mbit'):
         self.name = name
-        logger.info("Setting tc redirection {} -> ifb0".format(self.name))
+        self.ifb_name = ifb_name
+        logger.info("Setting tc redirection {} -> {}".format(self.name, self.ifb_name))
         run_command("tc qdisc add dev {} ingress".format(self.name))
         run_command("tc filter add dev {} ingress pref 10 protocol "
-                    "ip u32 match u32 0 0 action mirred egress redirect dev ifb0".format(self.name))
-        run_command("tc qdisc add dev ifb0 root handle 1: htb default 10")
+                    "ip u32 match u32 0 0 action mirred egress redirect dev {}".format(self.name, self.ifb_name))
+        run_command("tc qdisc add dev {} root handle 1: htb default 10".format(self.ifb_name))
         self.default_rate = default_rate
 
     def as_dict(self):
@@ -97,7 +98,7 @@ class Interface:
 
     @property
     def default_rate(self):
-        completed_process = run_command("tc class show dev ifb0 classid 1:6500".format(self.name))
+        completed_process = run_command("tc class show dev {} classid 1:6500".format(self.ifb_name))
         if completed_process.returncode == 0:
             match = re.search('rate (?P<rate>\w+)', completed_process.stdout)
             if match:
@@ -109,27 +110,24 @@ class Interface:
         if default_rate is not None:
             if self.default_rate is None:
                 logger.info("Setting {} new default rate = {}".format(self.name, default_rate))
-                run_command("tc class add dev ifb0 parent 1: classid 1:6500 htb rate {}".format(default_rate))
-                run_command("tc filter add dev ifb0 parent 1: protocol ip pref 65535 u32 match u32 0 0 flowid 1:6500")
+                run_command("tc class add dev {} parent 1: classid 1:6500 htb rate {}".format(self.ifb_name, default_rate))
+                run_command("tc filter add dev {} parent 1: protocol ip pref 65535 u32 match u32 0 0 flowid 1:6500"
+                            .format(self.ifb_name))
             else:
                 logger.info("Setting {} default rate to {}".format(self.name, default_rate))
-                run_command("tc class replace dev ifb0 classid 1:6500 htb rate {}".format(default_rate))
+                run_command("tc class replace dev {} classid 1:6500 htb rate {}".format(self.ifb_name, default_rate))
         else:
             if self.default_rate is not None:
                 logger.info("Removing {} default rate".format(self.name))
-                #completed_process = run_command("tc filter show dev ifb0 pref 65535")
-                #match = re.search('fh (?P<handle>\w+::\w+)', completed_process.stdout).group('handle')
-                #default_filter_handle = match.group
-                cmd = "tc filter del dev ifb0 protocol ip pref 65535 "
-                #      "handle {} protocol ip u32".format(default_filter_handle)
+                cmd = "tc filter del dev {} protocol ip pref 65535".format(self.ifb_name)
                 run_command(cmd)
-                cmd = "tc class del dev ifb0 classid 1:6500"
+                cmd = "tc class del dev {} classid 1:6500".format(self.ifb_name)
                 run_command(cmd)
 
     @property
     def policies(self):
         policies = dict()
-        completed_process = run_command("tc filter show dev ifb0")
+        completed_process = run_command("tc filter show dev {}".format(self.ifb_name))
         if completed_process.returncode == 0:
             tc_filters = [flow for flow in completed_process.stdout.split("filter")
                           if 'flowid' in flow and 'pref 65535' not in flow]
@@ -137,7 +135,8 @@ class Interface:
                 policy = extract_policy(tc_filter)
                 logger.debug("extracted policy {}".format(policy))
                 if policy is not None:
-                    completed_process = run_command("tc class show dev ifb0 classid 1:{}".format(policy['policy_id']))
+                    completed_process = run_command("tc class show dev {} classid 1:{}"
+                                                    .format(self.ifb_name, policy['policy_id']))
                     matched = re.search('rate (?P<rate>\w+)', completed_process.stdout)
                     if matched:
                         policy['action']['rate'] = matched.group('rate')
@@ -168,8 +167,8 @@ class Interface:
         else:
             policy_id = self.get_free_policy_id()
             pref = 15
-            run_command("tc class add dev ifb0 parent 1: classid 1:{} htb rate {}".format(
-                policy_id, action['rate']))
+            run_command("tc class add dev {} parent 1: classid 1:{} htb rate {}"
+                .format(self.ifb_name, policy_id, action['rate']))
             if not match:
                 match_cmd = "match u32 0 0"
             else:
@@ -186,8 +185,8 @@ class Interface:
                 if 'dst_port' in match and match['dst_port'] is not None:
                     pref = pref - 1
                     match_cmd = match_cmd + "match ip dport {} 0xffff ".format(match['dst_port'])
-            cmd = "tc filter add dev ifb0 parent 1:0 pref {} protocol ip u32 {} flowid 1:{}"\
-                .format(pref, match_cmd, policy_id)
+            cmd = "tc filter add dev {} parent 1:0 pref {} protocol ip u32 {} flowid 1:{}"\
+                .format(self.ifb_name, pref, match_cmd, policy_id)
             run_command(cmd)
         policy = self.get_policy_by_match(match)
         return policy
@@ -195,7 +194,7 @@ class Interface:
     def update_policy(self, policy_id, action):
         policy = self.get_policy(policy_id)
         if policy is not None:
-            cmd = "tc class replace dev ifb0 classid 1:{} htb rate {}".format(policy_id, action['rate'])
+            cmd = "tc class replace dev {} classid 1:{} htb rate {}".format(self.ifb_name, policy_id, action['rate'])
             logger.debug("Sending TC cmd: {}".format(cmd))
             run(cmd.split(),  encoding='UTF8')
         else:
@@ -211,10 +210,10 @@ class Interface:
     def delete_policy(self, policy_id):
         policy = self.get_policy(policy_id)
         if policy is not None:
-            cmd = "tc filter del dev ifb0 pref {} " \
-                  "handle {} protocol ip u32".format(policy['pref'], policy['handle'])
+            cmd = "tc filter del dev {} pref {} " \
+                  "handle {} protocol ip u32".format(self.ifb_name, policy['pref'], policy['handle'])
             run_command(cmd)
-            cmd = "tc class del dev ifb0 classid 1:{}".format(policy['policy_id'])
+            cmd = "tc class del dev {} classid 1:{}".format(self.ifb_name, policy['policy_id'])
             run_command(cmd)
         else:
             raise ValueError("cannot delete update Not Existing policy_id {}".format(policy_id))

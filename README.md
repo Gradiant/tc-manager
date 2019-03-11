@@ -27,11 +27,15 @@ Dependencies can be install with
   
 ## Getting Started
 
-Before running tc-manager you MUST create an Intermediate Functional Block (ifb0). 
+Before running tc-manager you MUST create the same Intermediate Functional Blocks (ifb0, ifb1, ifb2, etc) as the
+number of managed interfaces. Example for 3 interfaces:
 
  ``` 
- modprobe ifb
+ modprobe -r ifb
+ modprobe ifb numifbs=3
  ip link ifb0 set up
+ ip link ifb1 set up
+ ip link ifb2 set up
  ```
  
 To run tc-manager docker container to set policies in your host interfaces you have to:
@@ -66,7 +70,7 @@ You can write your custom python code for advance configuration. The NetworkInte
 
 ## Quick Test
 To make a quick local test of tc-manager we are going to shape the traffic between two containers.
-The ```./run.sh``` deploys the testing scenario.
+The ```sudo ./run.sh``` deploys the testing scenario.
 
 It deploys two iperf3 docker containers *h1* and *h2* connected to a docker network *tcnet*.
 Then it launches the docker tc-manager into the host network to manage the ingress traffic of vethXXXX and vethYYYY tcnet interfaces:
