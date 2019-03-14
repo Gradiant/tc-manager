@@ -110,12 +110,12 @@ class Interface:
         if default_rate is not None:
             if self.default_rate is None:
                 logger.info("Setting {} new default rate = {}".format(self.name, default_rate))
-                run_command("tc class add dev {} parent 1: classid 1:6500 htb rate {}".format(self.ifb_name, default_rate))
+                run_command("tc class add dev {} parent 1: classid 1:6500 htb rate {} burst 1M cburst 1M".format(self.ifb_name, default_rate))
                 run_command("tc filter add dev {} parent 1: protocol ip pref 65535 u32 match u32 0 0 flowid 1:6500"
                             .format(self.ifb_name))
             else:
                 logger.info("Setting {} default rate to {}".format(self.name, default_rate))
-                run_command("tc class replace dev {} classid 1:6500 htb rate {}".format(self.ifb_name, default_rate))
+                run_command("tc class replace dev {} classid 1:6500 htb rate {} burst 1M cburst 1M".format(self.ifb_name, default_rate))
         else:
             if self.default_rate is not None:
                 logger.info("Removing {} default rate".format(self.name))
@@ -167,7 +167,7 @@ class Interface:
         else:
             policy_id = self.get_free_policy_id()
             pref = 15
-            run_command("tc class add dev {} parent 1: classid 1:{} htb rate {}"
+            run_command("tc class add dev {} parent 1: classid 1:{} htb rate {} burst 1M cburst 1M"
                 .format(self.ifb_name, policy_id, action['rate']))
             if not match:
                 match_cmd = "match u32 0 0"
@@ -194,7 +194,7 @@ class Interface:
     def update_policy(self, policy_id, action):
         policy = self.get_policy(policy_id)
         if policy is not None:
-            cmd = "tc class replace dev {} classid 1:{} htb rate {}".format(self.ifb_name, policy_id, action['rate'])
+            cmd = "tc class replace dev {} classid 1:{} htb rate {} bust 1M cburst 1M".format(self.ifb_name, policy_id, action['rate'])
             logger.debug("Sending TC cmd: {}".format(cmd))
             run(cmd.split(),  encoding='UTF8')
         else:
